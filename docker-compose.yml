@@ -54,7 +54,7 @@ services:
         max-size: 100m
 
   gui-v2:
-    image: dojot/gui-v2:v0.5.0
+    image: local/gui-v2:v2.0
     restart: always
     logging:
       driver: json-file
@@ -630,7 +630,7 @@ services:
         max-size: 100m  
 
   backstage:
-    image: dojot/backstage:v0.5.0
+    image: local/backstage:v2.0
     restart: always
     depends_on:
       - postgres
@@ -640,7 +640,7 @@ services:
         max-size: 100m  
 
   cron:
-    image: dojot/cron:v0.5.0
+    image: local/cron:v2.0
     depends_on:
       - kafka
       - data-broker
@@ -652,56 +652,54 @@ services:
       options:
         max-size: 100m
 
-  # kafka2ftp:
-  #   image: dojot/kafka2ftp:v0.5.0
-  #   environment:
-  #     FTP_TENANT: 'admin'
-  #     FTP_HOST: 'localhost'
-  #     FTP_PORT: 21
-  #     FTP_USER: 'anonymous'
-  #     FTP_PASSWORD: 'guest'
-  #     MAX_CONCURRENT_CONNECTIONS: 10
-  #     FTP_REMOTE_DIR: "/"
-  #     RETRIES: 13
-  #     LOG_LEVEL: info
-  #   depends_on:
-  #     - kafka
-  #     - data-broker
-  #     - flowbroker
-  #   restart: always
-  #   logging:
-  #      driver: json-file
-  #      options:
-  #        max-size: 100m
-
-# GUI to Kong Admin API - BEGIN
-# Konga GUI will be available at http://localhost:1337
-#
-# konga:
-#   image: dojot/pantsel_konga:0.14.7
-#   depends_on:
-#     - apigw
-#     - mongodb
-#   ports:
-#     - 1337:1337
-#   environment:
-#     DB_ADAPTER: mongo
-#     DB_DATABASE: konga
-#     DB_HOST: mongodb
-#     KONGA_LOG_LEVEL: info
-#     NO_AUTH: "true"
-#     KONGA_SEED_KONG_NODE_DATA_SOURCE_FILE: /konga.js
-#     NODE_ENV: production
-#     BASE_URL: localhost
-#   volumes:
-#     - ./kong/konga.config.js:/konga.js:ro
-#   restart: on-failure
-#   logging:
-#     driver: json-file
-#     options:
-#       max-size: 100m
-#
-# GUI to Kong Admin API - END
+  binary-agent:
+    image: local/binary-agent:v2.0
+    depends_on:
+      - kafka
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+    environment:
+      DEVICE_MANAGER_UNKNOWN_DEVICE_ID: 'b19b3d'
+      LOG_LEVEL: 'info'
+      
+  meter-calc:
+    image: local/meter-calc:v2.0
+    #image: local/meter-calc:1.0
+    restart: always
+    environment:
+      METERCALC_CONFIG_FILE: 'production.conf'
+      OPERATION_DEVICE_ID: 'ddd4a'  
+      CAMPUS_DEVICE_ID: '86ab65'
+      LOG_LEVEL: 'debug'
+    depends_on:
+      - kafka
+      - auth
+      - history
+      - device-manager
+    ports:
+      - 3000:3000
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+      
+  json-agent:
+    image: local/json-agent:v2.0
+    depends_on:
+      - kafka
+    restart: always
+    environment:
+      LOG_LEVEL: 'debug'
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
 
 volumes:
   ejbca-volume:
