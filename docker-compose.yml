@@ -53,7 +53,7 @@ services:
         max-size: 100m
 
   gui-v2:
-    image: local/gui-v2:v2.1
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/gui-v2:2.1
     restart: always
     logging:
       driver: json-file
@@ -629,7 +629,7 @@ services:
         max-size: 100m  
 
   backstage:
-    image: local/backstage:v2.1
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/backstage:2.1
     restart: always
     depends_on:
       - postgres
@@ -639,7 +639,7 @@ services:
         max-size: 100m  
 
   cron:
-    image: local/cron:v2.1
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/cs/cron:2.1
     depends_on:
       - kafka
       - data-broker
@@ -652,7 +652,7 @@ services:
         max-size: 100m
 
   binary-agent:
-    image: local/binary-agent:v2.1
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/binary-agent:2.1
     depends_on:
       - kafka
     restart: always
@@ -666,7 +666,7 @@ services:
       LOG_LEVEL: 'info'
       
   meter-calc:
-    image: local/meter-calc:v2.1
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/meter-calc:2.1
     #image: local/meter-calc:1.0
     restart: always
     environment:
@@ -688,7 +688,7 @@ services:
         max-file: '5'
       
   json-agent:
-    image: local/json-agent:v2.1
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/json-agent:2.1
     depends_on:
       - kafka
     restart: always
@@ -701,7 +701,6 @@ services:
         max-file: '5'
     networks:
       - default
-      - flowbroker
       
   rmq0: &rabbitmq
     image: rabbitmq:3.8.8
@@ -717,7 +716,6 @@ services:
     hostname: rmq0
     networks:
       - default
-      - flowbroker
 
 volumes:
   ejbca-volume:
