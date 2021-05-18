@@ -8,6 +8,7 @@ services:
     environment:
       FALCON_SETTINGS_MODULE: 'history.settings.docker'
       DOJOT_MANAGEMENT_USER: 'history'
+      HISTORY_DB_DATA_EXPIRATION: "5356800"
       LOG_LEVEL: INFO
     logging:
       driver: json-file
@@ -53,7 +54,7 @@ services:
         max-size: 100m
 
   gui-v2:
-    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/gui-v2:2.2
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/gui-v2:2.2.1
     restart: always
     logging:
       driver: json-file
@@ -629,7 +630,7 @@ services:
         max-size: 100m  
 
   backstage:
-    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/backstage:2.2
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/backstage:2.2.1
     restart: always
     depends_on:
       - postgres
@@ -639,7 +640,7 @@ services:
         max-size: 100m  
 
   cron:
-    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/cs/cron:2.2
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/cron:2.2.1
     depends_on:
       - kafka
       - data-broker
@@ -652,7 +653,7 @@ services:
         max-size: 100m
 
   binary-agent:
-    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/binary-agent:2.2
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/binary-agent:2.2.1
     depends_on:
       - kafka
     restart: always
@@ -666,7 +667,7 @@ services:
       LOG_LEVEL: 'info'
       
   meter-calc:
-    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/meter-calc:2.2
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/meter-calc:2.2.1
     #image: local/meter-calc:1.0
     restart: always
     environment:
@@ -688,7 +689,7 @@ services:
         max-file: '5'
       
   json-agent:
-    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/json-agent:2.2
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/json-agent:2.2.1
     depends_on:
       - kafka
     restart: always
