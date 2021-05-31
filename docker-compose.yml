@@ -97,66 +97,6 @@ services:
       options:
         max-size: 100m
 
-################
-# iot-agent lwm2m
-################
-  iotagent-lwm2m:
-    image: dojot/iotagent-leshan:development
-    depends_on:
-      - kafka
-      - data-broker
-      - auth
-      - image-manager
-    environment:
-      DOJOT_MANAGEMENT_USER: 'iotagent-lwm2m'
-      KAFKA_GROUP_ID: "iotagent-lwm2m-group"
-      # The FILE_SERVER_ADDRESS should be filled with an address accesible to the devices that want to update the firmware
-      FILE_SERVER_ADDRESS: 127.0.0.1
-    ports:
-      - 5896:5896 # file server http port
-      - 5683:5683/udp # configuration coap port
-      - 5684:5684/udp # configuration dtls port
-      - 5693:5693/udp # file server coap port
-      - 5694:5694/udp # file server dtls port
-    restart: always
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  image-manager:
-    image: dojot/image-manager:development
-    restart: always
-    depends_on:
-      - postgres
-      - minio
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-    environment:
-      # TODO: The following should be unique for each environment
-      S3ACCESSKEY: 9HEODSF6WQN5EZ39DM7Z
-      S3SECRETKEY: fT5nAgHR9pkj0yYsBdc4p+PPq6ArjshcPdz0HA6W
-      DBHOST: postgres
-      DBUSER: imgm
-      DBPASS: imgm
-
-  minio:
-    image: dojot/minio:2019.09.20
-    restart: always
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-    environment:
-      # TODO: The following should be unique for each environment
-      MINIO_ACCESS_KEY: 9HEODSF6WQN5EZ39DM7Z
-      MINIO_SECRET_KEY: fT5nAgHR9pkj0yYsBdc4p+PPq6ArjshcPdz0HA6W
-    command: server /data
-    volumes:
-      - minio-volume:/data
-
   device-manager:
     image: dojot/device-manager:development
     restart: always
@@ -345,72 +285,6 @@ services:
       options:
         max-size: 100m
 
-  flowbroker:
-    image: dojot/flowbroker:development
-    restart: always
-    environment:
-      DEPLOY_ENGINE: "docker"
-      FLOWBROKER_NETWORK: ${FLOWBROKER_NETWORK}
-      DOJOT_MANAGEMENT_USER: 'flowbroker'
-      KAFKA_GROUP_ID: 'flowbroker-group'
-      LOG_LEVEL: 'info'
-    depends_on:
-      - rabbitmq
-      - kafka
-      - mongodb
-      - auth
-      - flowbroker-context-manager
-      - flowbroker-redis
-    networks:
-      - default
-      - flowbroker
-    volumes:
-      - flowbroker-volume:/data
-      - /var/run/docker.sock:/var/run/docker.sock:Z
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  flowbroker-redis:
-    image: dojot/redis:5.0.5-alpine3.10
-    restart: always
-    volumes:
-      - flowbroker-redis-volume:/data
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  flowbroker-context-manager:
-    image: dojot/flowbroker-context-manager:development
-    restart: always
-    environment:
-      ZOOKEEPER_HOST: zookeeper
-      ZOOKEEPER_PORT: 2181
-      ZEROMQ_PORT: 5556
-      HOLD_LOCK_TIMEOUT: 10000
-      WAIT_LOCK_TIMEOUT: 30000
-    depends_on:
-      - zookeeper
-    networks:
-      - default
-      - flowbroker
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  rabbitmq:
-    image: dojot/rabbitmq:3.7-alpine
-    restart: always
-    volumes:
-      - rabbitmq-volume:/var/lib/rabbitmq
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
   zookeeper:
     image: "confluentinc/cp-zookeeper:5.5.0"
     restart: always
@@ -463,28 +337,6 @@ services:
       options:
         max-size: 100m
 
-  x509-identity-mgmt:
-    image: dojot/x509-identity-mgmt:development
-    depends_on:
-      - postgres
-      - mongodb
-    restart: always
-    hostname: "x509-identity-mgmt"
-    domainname: "dojot.iot"
-    environment:
-      DATABASE_JDBC_URL: jdbc:postgresql://postgres:5432/ejbca?characterEncoding=UTF-8
-      DATABASE_USER: ejbca
-      DATABASE_PASSWORD: ejbca
-      EJBCA_PERFORM_DOJOT_SETUP: "true"
-      NODE_ENV: production
-      MONGO_URI: "mongodb://mongodb:27017/x509-identity-mgmt"
-    volumes:
-      - ejbca-volume:/mnt/persistent
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
   kafka-ws:
     image: dojot/kafka-ws:development
     depends_on:
@@ -509,122 +361,10 @@ services:
       options:
         max-size: 100m
 
-  iotagent-mqtt:
-    image: dojot/vernemq-dojot:development
-    command: ["/bin/bash", "-c", "echo $$VERNEMQ_CONF | base64 -d > /etc/vernemq/vernemq.conf; echo $$VM_ARGS | base64 -d > /etc/vernemq/vm.args; /vernemq/vmq_dojot.sh"]
-    depends_on:
-      - x509-identity-mgmt
-    ports:
-      - 1883:1883 # You can comment this line (- 1883:1883) to disable insecure mode without TLS.
-      - 8883:8883
-    environment:
-      HOSTNAME: iotagent-mqtt
-      INTERNAL_DNS: iotagent-mqtt
-      EXTERNAL_SERVER_IP: "127.0.0.1"
-      EXTERNAL_SERVER_HOSTNAME: localhost
-      VERNEMQ_CONF: YWNjZXB0X2V1bGEgPSB5ZXMKbWV0YWRhdGFfcGx1Z2luID0gdm1xX3N3YwpwbHVnaW5zLnZtcV9wYXNzd2QgPSBvZmYKcGx1Z2lucy52bXFfYWNsID0gb2ZmCnBsdWdpbnMuZG9qb3RfZGlzY29ubmVjdF9wbHVnaW4ucGF0aCA9IC92ZXJuZW1xL2Rvam90X2Rpc2Nvbm5lY3RfcGx1Z2luL2RlZmF1bHQKcGx1Z2lucy5kb2pvdF9kaXNjb25uZWN0X3BsdWdpbiA9IG9uCnBsdWdpbnMuZG9qb3RfZGlzY29ubmVjdF9wbHVnaW4ucHJpb3JpdHkgPSAyCnBsdWdpbnMuZG9qb3RfYWNsX3BsdWdpbi5wYXRoID0gL3Zlcm5lbXEvZG9qb3RfYWNsX3BsdWdpbi9kZWZhdWx0CnBsdWdpbnMuZG9qb3RfYWNsX3BsdWdpbiA9IG9uCnBsdWdpbnMuZG9qb3RfYWNsX3BsdWdpbi5wcmlvcml0eSA9IDIKbGV2ZWxkYi5tYXhpbXVtX21lbW9yeS5wZXJjZW50ID0gMjAKbG9nLmNvbnNvbGUgPSBjb25zb2xlCmxpc3RlbmVyLm1heF9jb25uZWN0aW9ucyA9IDIwMDAwMApsaXN0ZW5lci5ucl9vZl9hY2NlcHRvcnMgPSAxMDAKbWF4X2luZmxpZ2h0X21lc3NhZ2VzID0gMjAKbWF4X29ubGluZV9tZXNzYWdlcyA9IDEwMDAwCmxpc3RlbmVyLnNzbC5kZWZhdWx0ID0gMC4wLjAuMDo4ODgzCmxpc3RlbmVyLnNzbC5kZWZhdWx0LmNhZmlsZSA9ICAvdmVybmVtcS9jZXJ0L2NhLmNydApsaXN0ZW5lci5zc2wuZGVmYXVsdC5jZXJ0ZmlsZSA9IC92ZXJuZW1xL2NlcnQvaW90YWdlbnQtbXF0dC5jcnQKbGlzdGVuZXIuc3NsLmRlZmF1bHQua2V5ZmlsZSA9IC92ZXJuZW1xL2NlcnQvaW90YWdlbnQtbXF0dC5rZXkKbGlzdGVuZXIuc3NsLmRlZmF1bHQuY3JsZmlsZSA9ICAvdmVybmVtcS9jZXJ0L2NhLmNybApsaXN0ZW5lci5zc2wuZGVmYXVsdC51c2VfaWRlbnRpdHlfYXNfdXNlcm5hbWUgPSBvbgpsaXN0ZW5lci5zc2wuZGVmYXVsdC5yZXF1aXJlX2NlcnRpZmljYXRlID0gb24=
-      VM_ARGS: K1AgMjU2MDAwCi1lbnYgRVJMX01BWF9FVFNfVEFCTEVTIDI1NjAwMAotZW52IEVSTF9DUkFTSF9EVU1QIC92ZXJuZW1xL2xvZy9lcmxfY3Jhc2guZHVtcAotZW52IEVSTF9GVUxMU1dFRVBfQUZURVIgMAotZW52IEVSTF9NQVhfUE9SVFMgMjYyMTQ0CitBIDY0Ci1zZXRjb29raWUgdm1xCi1uYW1lIHZtcUBpb3RhZ2VudC1tcXR0LmRvam90LmlvdAorSyB0cnVlCitXIHcKLXNtcCBlbmFibGU=
-    restart: always
-    hostname: iotagent-mqtt
-    domainname: dojot.iot
-    volumes:
-      - iotagent-mqtt-volume:/vernemq/data
-      - iotagent-mqtt-log-volume:/vernemq/log
-      - iotagent-mqtt-etc-volume:/vernemq/etc
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  v2k-bridge:
-    image: dojot/v2k-bridge:development
-    depends_on:
-      - iotagent-mqtt
-      - kafka
-      - x509-identity-mgmt
-      - data-broker
-    environment:
-      V2K_APP_HOSTNAME: "v2k-bridge"
-      V2K_APP_USER_CONFIG_FILE: "docker.conf"
-      V2K_PRODUCER_METADATA_BROKER_LIST: "kafka:9092"
-    restart: always
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  k2v-bridge:
-    image: dojot/k2v-bridge:development
-    depends_on:
-      - iotagent-mqtt
-      - kafka
-      - x509-identity-mgmt
-    environment:
-      K2V_APP_HOSTNAME: "k2v-bridge"
-      K2V_APP_USER_CONFIG_FILE: "docker.conf"
-      K2V_CONSUMER_METADATA_BROKER_LIST: "kafka:9092"
-    restart: always
-    logging:
-      driver: json-file
-      options:
-        max-size: 100m
-
-  ###
-  # BEGIN - Legacy mqtt broker based on mosca (https://github.com/moscajs/mosca)
-  #
-  # How to use mqtt broker based on mosca:
-  #
-  # Uncomment the `iotagent-mqtt-mosca` and `mosca-redis` services blocks, and
-  # then comment on the `iotagent-mqtt`,` v2k-bridge` and `k2v-bridge` services blocks.
-  # It is necessary to comment `iotagent-mqtt` to avoid conflicts on ports 1883 and 8883,
-  # or to change such ports that will be mapped for external access.
-  #
-  ###
-  # iotagent-mqtt-mosca:
-  #   image: dojot/iotagent-mosca:development
-  #   depends_on:
-  #     - mosca-redis
-  #     - kafka
-  #     - data-broker
-  #     - auth
-  #     - x509-identity-mgmt
-  #   ports:
-  #     - 1883:1883
-  #     - 8883:8883
-  #   restart: always
-  #   environment:
-  #     DOJOT_MANAGEMENT_USER: 'iotagent-mqtt-mosca'
-  #     KAFKA_GROUP_ID: 'iotagent-mqtt-mosca-group'
-  #     ALLOW_UNSECURED_MODE: 'true'
-  #     LOG_LEVEL: 'info'
-  #     MOSCA_TLS_DNS_LIST: 'localhost'
-  #     MOSCA_TLS_CRL_UPDATE_TIME: '0 */2 * * *' # Updated CRL Every 2 hours
-  #     MOSCA_TLS_CON_MAX_LIFETIME: 7200000 # Maximum lifetime of a connection in ms (If is 0 then is disabled)
-  #     MOSCA_TLS_CON_IDLE_TIMEOUT: 1800000 # The idle timeout for a connection in ms (If is 0 then is disabled)
-  #     MOSCA_TLS_CNAME: "iotagent-mqtt-mosca"
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: 100m
-
-  # mosca-redis:
-  #   image: dojot/redis:5.0.5-alpine3.10
-  #   restart: always
-  #   volumes:
-  #     - mosca-redis-volume:/data
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: 100m
-  ###
-  # END - Legacy mqtt broker based on https://github.com/moscajs/mosca
-  ###
-
   data-manager:
     image: dojot/data-manager:development
     restart: always
     depends_on:
-      - flowbroker
       - device-manager
     logging:
       driver: json-file
@@ -654,80 +394,70 @@ services:
       options:
         max-size: 100m
 
-  # kafka2ftp:
-  #   image: dojot/kafka2ftp:development
-  #   environment:
-  #     FTP_TENANT: 'admin'
-  #     FTP_HOST: 'localhost'
-  #     FTP_PORT: 21
-  #     FTP_USER: 'anonymous'
-  #     FTP_PASSWORD: 'guest'
-  #     MAX_CONCURRENT_CONNECTIONS: 10
-  #     FTP_REMOTE_DIR: "/"
-  #     RETRIES: 13
-  #     LOG_LEVEL: info
-  #   depends_on:
-  #     - kafka
-  #     - data-broker
-  #     - flowbroker
-  #   restart: always
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: 100m
 
-# GUI to Kong Admin API - BEGIN
-# Konga GUI will be available at http://localhost:1337
-#
-# konga:
-#   image: dojot/pantsel_konga:0.14.7
-#   depends_on:
-#     - apigw
-#     - mongodb
-#   ports:
-#     - 1337:1337
-#   environment:
-#     DB_ADAPTER: mongo
-#     DB_DATABASE: konga
-#     DB_HOST: mongodb
-#     KONGA_LOG_LEVEL: info
-#     NO_AUTH: "true"
-#     KONGA_SEED_KONG_NODE_DATA_SOURCE_FILE: /konga.js
-#     NODE_ENV: production
-#     BASE_URL: localhost
-#   volumes:
-#     - ./kong/konga.config.js:/konga.js:ro
-#   restart: on-failure
-#   logging:
-#     driver: json-file
-#     options:
-#       max-size: 100m
-#
-# GUI to Kong Admin API - END
+  binary-agent:
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/binary-agent:2.1
+    depends_on:
+      - kafka
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+    environment:
+      DEVICE_MANAGER_UNKNOWN_DEVICE_ID: 'b19b3d'
+      LOG_LEVEL: 'info'
+      
+  meter-calc:
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/meter-calc:2.2.1
+    #image: local/meter-calc:1.0
+    restart: always
+    environment:
+      METERCALC_CONFIG_FILE: 'production.conf'
+      OPERATION_DEVICE_ID: 'ddd4a'  
+      CAMPUS_DEVICE_ID: '86ab65'
+      LOG_LEVEL: 'debug'
+    depends_on:
+      - kafka
+      - auth
+      - history
+      - device-manager
+    ports:
+      - 3000:3000
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+      
+  json-agent:
+    image: artifactory.cpqd.com.br/docker-dev/cpqd/dojot/json-agent:2.2.1
+    depends_on:
+      - kafka
+    restart: always
+    environment:
+      LOG_LEVEL: 'debug'
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: '5'
+    networks:
+      - default
 
+
+ 
 volumes:
-  ejbca-volume:
   postgres-volume:
   mongodb-volume:
   mongodb-cfg-volume:
-  minio-volume:
-  rabbitmq-volume:
   zookeeper-volume:
   zookeeper-log-volume:
   zookeeper-secrets-volume:
   kafka-volume:
   kafka-secrets-volume:
-  iotagent-mqtt-volume:
-  iotagent-mqtt-log-volume:
-  iotagent-mqtt-etc-volume:
   auth-redis-volume:
-  flowbroker-volume:
-  flowbroker-redis-volume:
   data-broker-redis-volume:
   device-manager-redis-volume:
   kafka-ws-redis-volume:
-  mosca-redis-volume:
-
-networks:
-  flowbroker:
-    name: ${FLOWBROKER_NETWORK}
