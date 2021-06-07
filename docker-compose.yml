@@ -447,12 +447,36 @@ services:
     networks:
       - default
 
-
+  rabbitmq:
+    image: dojot/rabbitmq:3.7-alpine
+    restart: always
+    volumes:
+      - rabbitmq-volume:/var/lib/rabbitmq
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+        
+  rmq0: &rabbitmq
+    image: rabbitmq:3.8.8
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+      - "15693:15692"
+    hostname: rmq0
+    networks:
+      - default
  
 volumes:
   postgres-volume:
   mongodb-volume:
   mongodb-cfg-volume:
+  rabbitmq-volume:
   zookeeper-volume:
   zookeeper-log-volume:
   zookeeper-secrets-volume:
