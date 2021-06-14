@@ -2,13 +2,14 @@ version: '3.8'
 services:
 
   history:
-    image: dojot/history:development
+    image: dojot/history:v0.5.0
     restart: always
     depends_on:
       - mongodb
     environment:
       FALCON_SETTINGS_MODULE: 'history.settings.docker'
       DOJOT_MANAGEMENT_USER: 'history'
+      HISTORY_DB_DATA_EXPIRATION: "5356800"
       LOG_LEVEL: INFO
     logging:
       driver: json-file
@@ -16,7 +17,7 @@ services:
         max-size: 100m
 
   persister:
-    image: dojot/persister:development
+    image: dojot/persister:v0.5.0
     restart: always
     depends_on:
       - mongodb
@@ -52,7 +53,7 @@ services:
       - mongodb-cfg-volume:/data/configdb
 
   gui:
-    image: dojot/gui:development
+    image: dojot/gui:v0.5.0
     restart: always
     logging:
       driver: json-file
@@ -68,7 +69,7 @@ services:
         max-size: 100m
 
   data-broker:
-    image: dojot/data-broker:development
+    image: dojot/data-broker:v0.5.0
     restart: always
     depends_on:
       - kafka
@@ -98,7 +99,7 @@ services:
         max-size: 100m
 
   device-manager:
-    image: dojot/device-manager:development
+    image: dojot/device-manager:v0.5.0
     restart: always
     environment:
       # TODO: Fill these env variables with suitable values
@@ -154,7 +155,7 @@ services:
 
   # Prepare database, Bootstrap the database
   kong-migrations:
-    image: dojot/kong:development
+    image: dojot/kong:v0.5.0
     command: kong migrations bootstrap
     depends_on:
       postgres:
@@ -174,7 +175,7 @@ services:
 
   # Run any new migrations and Finish running any pending migrations after 'up'.
   kong-migrations-up:
-    image:  dojot/kong:development
+    image:  dojot/kong:v0.5.0
     command: kong migrations up && kong migrations finish
     depends_on:
       postgres:
@@ -193,7 +194,7 @@ services:
         max-size: 100m
 
   apigw:
-    image: dojot/kong:development
+    image: dojot/kong:v0.5.0
     depends_on:
       postgres:
         condition: service_healthy
@@ -253,7 +254,7 @@ services:
         max-size: 100m
 
   auth:
-    image: dojot/auth:development
+    image: dojot/auth:v0.5.0
     restart: always
     depends_on:
       - apigw
@@ -339,7 +340,7 @@ services:
         max-size: 100m
 
   kafka-ws:
-    image: dojot/kafka-ws:development
+    image: dojot/kafka-ws:v0.5.0
     depends_on:
       - kafka
       - kafka-ws-redis
@@ -363,7 +364,7 @@ services:
         max-size: 100m
 
   data-manager:
-    image: dojot/data-manager:development
+    image: dojot/data-manager:v0.5.0
     restart: always
     depends_on:
       - device-manager
